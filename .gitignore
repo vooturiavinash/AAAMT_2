@@ -1,0 +1,8 @@
+.cursor/
+**/.cursor/
+node_modules/
+smtp.env
+hr.env
+*.log
+.DS_Store
+Thumbs.db

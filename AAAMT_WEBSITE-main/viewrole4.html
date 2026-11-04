@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="assets/images/favicon.png">
+  <title>Apply — Review | AAAMT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@14,500;14,700&family=Manrope:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css?v=prodlock1">
+  <link rel="stylesheet" href="css/chatbot.css?v=embed1">
+  <link rel="stylesheet" href="css/view-role.css?v=vr2">
+  <link rel="stylesheet" href="css/responsive.css?v=megasize2">
+</head>
+<body class="vr-app-page">
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="logo" href="/"><img src="assets/images/logo-header.png" alt="AAAMT" width="53" height="52"></a>
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-label="Open menu"><span></span><span></span><span></span></button>
+      <nav class="site-nav">
+        <a class="nav-link" href="/">Home</a>
+        <div class="nav-drop">
+          <button class="nav-link nav-drop-btn" type="button" aria-expanded="false">Products <img src="assets/icons/chevron.svg" alt="" width="16" height="16"></button>
+          <div class="nav-drop-panel">
+            <div class="mega">
+              <a class="mega-card mega-product" href="https://instituterun.com/" target="_blank" rel="noopener noreferrer">
+                <img class="mega-product-logo" src="assets/icons/instituterun-mega.svg" alt="" width="35" height="48">
+                <h3>InstituteRun</h3>
+                <p><span>AI-Powered Automation &amp; Communication</span><span>Platform for Schools, Colleges &amp; Universities</span></p>
+              </a>
+              <a class="mega-card mega-product" href="https://doqzy.com/" target="_blank" rel="noopener noreferrer">
+                <img class="mega-doqzy-logo" src="assets/images/Dogzy.png" alt="" width="48" height="48">
+                <h3>Doqzy</h3>
+                <p><span>AI-Powered Contract Management for Legal,</span><span>Procurement, Finance, Sales &amp; Operations Teams</span></p>
+              </a>
+              <div class="mega-note"><div class="mega-note-copy"><strong><span>One Company.</span><span>A growing product portfolio</span></strong><p><span>Discover the people, principles and</span><span>ambition behind AAAMT..</span></p><button type="button" class="mega-note-btn">About AAAMT <span aria-hidden="true">&rarr;</span></button></div></div>
+            </div>
+          </div>
+        </div>
+        <a class="nav-link is-current" href="/careers">Careers</a>
+        <a class="nav-link" href="/contact">Contact Us</a>
+        <a class="btn btn-orange mobile-cta" href="/contact">Get in Touch</a>
+      </nav>
+      <a class="btn btn-orange" href="/contact">Get in Touch</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="vr-app-hero">
+      <div class="wrap">
+        <div>
+          <p class="vr-badge">Application for</p>
+          <h1 data-role-title>Product Designer</h1>
+        </div>
+        <p class="vr-app-hero-meta" data-role-app-meta>Product · Hyderabad · Full-time</p>
+      </div>
+    </section>
+
+    <div class="vr-stepper" aria-label="Application progress">
+      <div class="vr-step is-done"><span class="vr-step-num">✓</span> Candidate details</div>
+      <span class="vr-step-divider" aria-hidden="true"></span>
+      <div class="vr-step is-done"><span class="vr-step-num">✓</span> Experience / Resume</div>
+      <span class="vr-step-divider" aria-hidden="true"></span>
+      <div class="vr-step is-active"><span class="vr-step-num">3</span> Review</div>
+    </div>
+
+    <div class="vr-form-wrap">
+      <form class="vr-form-card" id="vr-step3" novalidate>
+        <p class="vr-step-label">Step 3 of 3</p>
+        <h2>Review your application</h2>
+        <p class="vr-form-lede">Check your details and answers before submitting. You can edit either section without losing your progress.</p>
+
+        <div class="vr-review-block">
+          <div class="vr-review-head">
+            <h3>Your details</h3>
+            <a class="vr-edit-link" id="edit-1" href="/viewrole2">Edit</a>
+          </div>
+          <ul class="vr-review-list" id="review-details"></ul>
+        </div>
+
+        <div class="vr-review-block">
+          <div class="vr-review-head">
+            <h3>Role questions</h3>
+            <a class="vr-edit-link" id="edit-2" href="/viewrole3">Edit</a>
+          </div>
+          <ul class="vr-review-list" id="review-answers"></ul>
+        </div>
+
+        <div class="vr-checks">
+          <label class="vr-check">
+            <input type="checkbox" name="accurate" required>
+            <span>I confirm that the information I have provided is accurate to the best of my knowledge.</span>
+          </label>
+          <label class="vr-check">
+            <input type="checkbox" name="privacy" required>
+            <span>Read our <a href="/privacy-policy/" target="_blank" rel="noopener noreferrer">Candidate Privacy Policy</a> for information about how your application is handled.</span>
+          </label>
+        </div>
+
+        <div class="vr-form-footer">
+          <a class="vr-back-link" id="back-2" href="/viewrole3">← Back</a>
+          <button class="btn btn-green" type="submit">Submit application +</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="js/nav.js?v=prodlock1"></script>
+  <script src="js/view-role.js?v=vr1"></script>
+  <script>
+    (function () {
+      AAAMTViewRole.fillRoleTexts();
+      var role = AAAMTViewRole.getRole();
+      var q = role.jobOpeningId ? ("?id=" + encodeURIComponent(role.jobOpeningId)) : "";
+      document.getElementById("edit-1").href = "/viewrole2" + q;
+      document.getElementById("edit-2").href = "/viewrole3" + q;
+      document.getElementById("back-2").href = "/viewrole3" + q;
+
+      var step1 = AAAMTViewRole.getStep(1);
+      var step2 = AAAMTViewRole.getStep(2);
+      if (!step1.firstName) {
+        location.replace("/viewrole2" + q);
+        return;
+      }
+      if (!step2.interest) {
+        location.replace("/viewrole3" + q);
+        return;
+      }
+
+      function esc(v) {
+        return String(v || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+      function addItems(ul, items) {
+        ul.innerHTML = items.filter(Boolean).map(function (item) {
+          return "<li>" + esc(item) + "</li>";
+        }).join("");
+      }
+
+      addItems(document.getElementById("review-details"), [
+        [step1.firstName, step1.lastName].filter(Boolean).join(" "),
+        step1.email,
+        step1.phone,
+        step1.location,
+        step1.resumeName,
+        step1.linkedin,
+        step1.source ? ("Source: " + step1.source) : "",
+      ]);
+      addItems(document.getElementById("review-answers"), [
+        step2.interest,
+        step2.problem,
+        step2.skills,
+        step2.portfolio,
+      ]);
+
+      document.getElementById("vr-step3").addEventListener("submit", function (event) {
+        event.preventDefault();
+        if (!event.target.reportValidity()) return;
+        location.href = "/succesrole" + q;
+      });
+    })();
+  </script>
+  <script src="js/chatbot-config.js?v=rag1"></script>
+  <script src="js/chatbot-api.js?v=ragfront1"></script>
+  <script src="js/chatbot.js?v=embed1"></script>
+</body>
+</html>
