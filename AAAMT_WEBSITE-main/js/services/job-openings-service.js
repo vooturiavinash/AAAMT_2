@@ -1,11 +1,15 @@
 /**
  * JobOpeningsService
  * - GET GetActiveJobOpenings
- * - GET GetJobById?jobId=
+ * - GET GetWebsiteJobOpeningById?jobOpeningId=  (public website detail)
  */
 (function (global) {
+  function publicHeaders() {
+    return { Accept: "application/json" };
+  }
+
   function getJson(url) {
-    return fetch(url, { method: "GET", headers: { Accept: "application/json" } }).then(
+    return fetch(url, { method: "GET", headers: publicHeaders() }).then(
       function (response) {
         if (!response.ok) throw new Error("Request failed (" + response.status + ")");
         return response.json();
@@ -23,11 +27,11 @@
     });
   }
 
-  function getJobById(jobId) {
+  function getJobById(jobOpeningId) {
     var endpoint =
       global.AAAMT_API.endpoints.getJobById +
-      "?jobId=" +
-      encodeURIComponent(String(jobId == null ? "" : jobId));
+      "?jobOpeningId=" +
+      encodeURIComponent(String(jobOpeningId == null ? "" : jobOpeningId));
     var url = global.AAAMT_API.url(endpoint);
     return getJson(url).then(function (body) {
       if (!body || body.success !== true) {

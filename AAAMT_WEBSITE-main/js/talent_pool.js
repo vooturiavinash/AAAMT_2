@@ -57,38 +57,45 @@
     return false;
   }
 
-  function buildPayload(form) {
-    var fileInput = form.querySelector("#cv");
-    var file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
-    var fileName = file ? file.name : "";
+  function buildPayload(form, uploaded) {
+    uploaded = uploaded || {};
     var phone = digitsOnly(form.elements.phone && form.elements.phone.value);
     if (phone.length > 10) phone = phone.slice(-10);
+    var resumeFileName = uploaded.name || uploaded.originalName || "";
 
-    return {
-      entryChannelId: ENTRY_CHANNEL_TALENT_POOL,
-      firstName: String((form.elements.firstName && form.elements.firstName.value) || "").trim(),
-      lastName: String((form.elements.lastName && form.elements.lastName.value) || "").trim(),
-      email: String((form.elements.email && form.elements.email.value) || "").trim(),
-      phoneNumber: phone,
-      teamId: Number(form.elements.function && form.elements.function.value),
-      candidateSourceId: Number(form.elements.source && form.elements.source.value),
-      employmentTypeId: Number(form.elements.employmentType && form.elements.employmentType.value),
-      currentLocation: String((form.elements.location && form.elements.location.value) || "").trim(),
-      linkedInUrl: String((form.elements.linkedin && form.elements.linkedin.value) || "").trim(),
-      resumeType: resumeTypeFromName(fileName),
-      resumeFileName: fileName,
-    };
+    // API expects List<SaveApplicationRequest> — top-level JSON array.
+    return [
+      {
+        entryChannelId: ENTRY_CHANNEL_TALENT_POOL,
+        firstName: String((form.elements.firstName && form.elements.firstName.value) || "").trim(),
+        lastName: String((form.elements.lastName && form.elements.lastName.value) || "").trim(),
+        email: String((form.elements.email && form.elements.email.value) || "").trim(),
+        phoneNumber: phone,
+        teamId: Number(form.elements.function && form.elements.function.value),
+        candidateSourceId: Number(form.elements.source && form.elements.source.value),
+        employmentTypeId: Number(form.elements.employmentType && form.elements.employmentType.value),
+        currentLocation: String((form.elements.location && form.elements.location.value) || "").trim(),
+        linkedInUrl: String((form.elements.linkedin && form.elements.linkedin.value) || "").trim(),
+        resumeType: resumeTypeFromName(resumeFileName || uploaded.originalName || ""),
+        resumeFileId: uploaded.fileId || null,
+        resumeFileName: resumeFileName,
+      },
+    ];
   }
 
   function saveApplication(payload) {
     var endpoint = global.AAAMT_API.endpoints.saveApplication;
     var url = global.AAAMT_API.url(endpoint);
+    var headers =
+      global.AAAMT_API && typeof global.AAAMT_API.authHeaders === "function"
+        ? global.AAAMT_API.authHeaders({ "Content-Type": "application/json" })
+        : {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          };
     return fetch(url, {
       method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+      headers: headers,
       body: JSON.stringify(payload),
     }).then(function (response) {
       return response.json().then(function (body) {
@@ -106,7 +113,10 @@
     var sizeEl = form.querySelector("#cv-size");
     var statusEl = form.querySelector("#cv-status");
     var clearBtn = form.querySelector("#cv-clear");
-    if (!fileInput || !chip || !nameEl || !statusEl || !clearBtn) return;
+    if (!fileInput || !chip || !nameEl || !statusEl || !clearBtn) return { getUploaded: function () { return null; } };
+
+    var uploaded = null;
+    var uploading = false;
 
     function formatSize(bytes) {
       if (!bytes && bytes !== 0) return "";
@@ -114,10 +124,11 @@
       return (bytes / 1024).toFixed(2) + "KB";
     }
 
-    function showFile(name, sizeLabel) {
+    function showFile(name, sizeLabel, statusText, isError) {
       nameEl.textContent = name;
       if (sizeEl) sizeEl.textContent = sizeLabel || "";
-      statusEl.textContent = "Successfully uploaded";
+      statusEl.textContent = statusText || "Successfully uploaded";
+      statusEl.style.color = isError ? "#d14343" : statusText === "Uploading…" ? "#64748b" : "#16a34a";
       chip.hidden = false;
     }
 
@@ -125,7 +136,10 @@
       fileInput.value = "";
       nameEl.textContent = "";
       if (sizeEl) sizeEl.textContent = "";
+      statusEl.textContent = "";
       chip.hidden = true;
+      uploaded = null;
+      uploading = false;
     }
 
     fileInput.addEventListener("change", function () {
@@ -133,36 +147,89 @@
         clearFile();
         return;
       }
+      if (!global.AAAMTFileUpload) {
+        setNote(form, "Upload service is not available.", true);
+        return;
+      }
       var file = fileInput.files[0];
-      showFile(file.name, formatSize(file.size));
+      var sizeLabel = formatSize(file.size);
+      var check =
+        typeof global.AAAMTFileUpload.validateResumeFile === "function"
+          ? global.AAAMTFileUpload.validateResumeFile(file)
+          : { ok: true };
+      if (!check.ok) {
+        uploaded = null;
+        uploading = false;
+        fileInput.value = "";
+        showFile(file.name, sizeLabel, check.message || "Invalid file", true);
+        setNote(form, check.message || "Resume must be PDF or DOCX, max 5 MB.", true);
+        return;
+      }
+      uploaded = null;
+      uploading = true;
+      setSubmitting(form, true);
+      showFile(file.name, sizeLabel, "Uploading…");
+      setNote(form, "Uploading resume…");
+
+      global.AAAMTFileUpload.uploadFiles(file)
+        .then(function (result) {
+          uploaded = result;
+          uploading = false;
+          setSubmitting(form, false);
+          showFile(file.name, sizeLabel, "Successfully uploaded");
+          setNote(form, "");
+        })
+        .catch(function (err) {
+          uploaded = null;
+          uploading = false;
+          setSubmitting(form, false);
+          showFile(file.name, sizeLabel, (err && err.message) || "Upload failed", true);
+          setNote(form, (err && err.message) || "Resume upload failed. Please try again.", true);
+        });
     });
 
     clearBtn.addEventListener("click", function () {
       clearFile();
+      setNote(form, "");
     });
 
     form.addEventListener("reset", function () {
       clearFile();
     });
+
+    return {
+      getUploaded: function () {
+        return uploaded;
+      },
+      isUploading: function () {
+        return uploading;
+      },
+    };
   }
 
   function init() {
     var form = document.getElementById("talent-form");
     if (!form || !global.AAAMT_API) return;
 
-    wireUpload(form);
+    var uploadState = wireUpload(form);
 
     form.addEventListener("submit", function (event) {
       event.preventDefault();
       if (!validate(form)) return;
-
-      var payload = buildPayload(form);
-      if (!payload.teamId || !payload.candidateSourceId || !payload.employmentTypeId) {
-        setNote(form, "Complete the required fields before joining.", true);
+      if (uploadState.isUploading()) {
+        setNote(form, "Please wait for the resume upload to finish.", true);
         return;
       }
-      if (!payload.resumeFileName) {
-        setNote(form, "Please upload your resume (PDF or DOCX).", true);
+      var uploaded = uploadState.getUploaded();
+      if (!uploaded || !uploaded.fileId) {
+        setNote(form, "Please upload your resume (PDF or DOCX, max 5 MB) before submitting.", true);
+        return;
+      }
+
+      var payload = buildPayload(form, uploaded);
+      var app = payload[0] || {};
+      if (!app.teamId || !app.candidateSourceId || !app.employmentTypeId) {
+        setNote(form, "Complete the required fields before joining.", true);
         return;
       }
 

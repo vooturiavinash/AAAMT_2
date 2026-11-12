@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@14,500;14,700&family=Manrope:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/base.css?v=prodlock1">
+  <link rel="stylesheet" href="css/base.css?v=megaresp3">
   <link rel="stylesheet" href="css/chatbot.css?v=embed1">
   <link rel="stylesheet" href="css/view-role.css?v=vr2">
-  <link rel="stylesheet" href="css/responsive.css?v=megasize2">
+  <link rel="stylesheet" href="css/responsive.css?v=megaresp3">
 </head>
 <body class="vr-app-page">
   <header class="site-header">
@@ -95,11 +95,11 @@
             <label for="source">Source <span class="req" aria-hidden="true"><img src="assets/icons/required-star.svg" alt=""></span></label>
             <select id="source" name="source" required>
               <option value="">Select</option>
-              <option value="LinkedIn">LinkedIn</option>
-              <option value="Naukri">Naukri</option>
-              <option value="Internshala">Internshala</option>
-              <option value="facebook">Facebook</option>
-              <option value="Referral">Referral</option>
+              <option value="1">LinkedIn</option>
+              <option value="2">Naukri</option>
+              <option value="3">Internshala</option>
+              <option value="4">Referral</option>
+              <option value="5">Facebook</option>
             </select>
           </div>
         </div>
@@ -114,7 +114,7 @@
           <label class="vr-upload" for="resume">
             <img class="vr-upload-icon" src="assets/icons/upload-cloud.png" alt="" width="44" height="44">
             <strong>Upload</strong>
-            <span class="vr-upload-hint">Drag and drop, or choose a file · PDF or DOCX · Format</span>
+            <span class="vr-upload-hint">Drag and drop, or choose a file · PDF or DOCX · Max 5 MB</span>
             <span class="vr-upload-choose">Choose file</span>
             <input id="resume" name="resume" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
           </label>
@@ -125,7 +125,7 @@
               <span class="status" id="resume-status">Successfully uploaded</span>
             </div>
             <button type="button" id="resume-clear" aria-label="Remove file">
-              <img src="assets/icons/trash-delete.png?v=2" alt="" width="18" height="18">
+              <img src="assets/icons/trash-delete-1.svg" alt="" width="18" height="18">
             </button>
           </div>
         </div>
@@ -144,28 +144,38 @@
   </main>
 
   <script src="js/nav.js?v=prodlock1"></script>
-  <script src="js/hr-api-config.js?v=jobs6"></script>
-  <script src="js/models/job-opening.js?v=jobs6"></script>
-  <script src="js/services/job-openings-service.js?v=jobs6"></script>
-  <script src="js/view-role.js?v=vr1"></script>
+  <script src="js/hr-api-config.js?v=livechk1"></script>
+  <script src="js/file-upload.js?v=up3"></script>
+  <script src="js/view-role.js?v=livechk1"></script>
   <script>
     (function () {
-      AAAMTViewRole.loadRoleFromApiIfNeeded().then(function (role) {
+      AAAMTViewRole.loadRoleFromStore().then(function (role) {
         var q = role.jobOpeningId ? ("?id=" + encodeURIComponent(role.jobOpeningId)) : "";
         document.getElementById("back-role").href = "/viewrole1" + q;
+        if (!role.jobOpeningId) {
+          location.replace("/careers#roles");
+        }
       });
 
       var form = document.getElementById("vr-step1");
+      var continueBtn = form.querySelector('button[type="submit"]');
       var saved = AAAMTViewRole.getStep(1);
       Object.keys(saved).forEach(function (key) {
         if (form.elements[key] && key !== "resumeName") form.elements[key].value = saved[key];
       });
+      if (saved.candidateSourceId && form.source) {
+        form.source.value = String(saved.candidateSourceId);
+      }
 
       var fileInput = document.getElementById("resume");
       var chip = document.getElementById("resume-chip");
       var nameEl = document.getElementById("resume-name");
       var statusEl = document.getElementById("resume-status");
       var resumeSize = saved.resumeSize || "";
+      var resumeFileId = saved.resumeFileId || "";
+      var resumeFileName = saved.resumeFileName || saved.resumeName || "";
+      var resumeOriginalName = saved.resumeOriginalName || saved.resumeName || "";
+      var uploading = false;
 
       function formatSize(bytes) {
         if (!bytes && bytes !== 0) return "";
@@ -173,34 +183,91 @@
         return (bytes / 1024).toFixed(2) + "KB";
       }
 
-      function showResume(name, sizeLabel) {
+      function showResume(name, sizeLabel, statusText) {
         nameEl.textContent = sizeLabel ? name + " (" + sizeLabel + ")" : name;
-        statusEl.textContent = "Successfully uploaded";
+        statusEl.textContent = statusText || "Successfully uploaded";
+        statusEl.style.color =
+          statusText && /(fail|error|invalid|must be|smaller|pdf or docx)/i.test(statusText)
+            ? "#d14343"
+            : "#16a34a";
         chip.classList.add("is-visible");
       }
 
-      if (saved.resumeName) showResume(saved.resumeName, saved.resumeSize || "");
+      function clearResume() {
+        fileInput.value = "";
+        resumeSize = "";
+        resumeFileId = "";
+        resumeFileName = "";
+        resumeOriginalName = "";
+        chip.classList.remove("is-visible");
+        nameEl.textContent = "";
+        statusEl.textContent = "";
+        saved.resumeFileId = "";
+        saved.resumeFileName = "";
+        saved.resumeName = "";
+        saved.resumeSize = "";
+        saved.resumeOriginalName = "";
+      }
+
+      if (resumeFileId && resumeFileName) {
+        showResume(resumeOriginalName || resumeFileName, resumeSize || "", "Successfully uploaded");
+      }
 
       fileInput.addEventListener("change", function () {
         if (!(fileInput.files && fileInput.files[0])) return;
         var file = fileInput.files[0];
+        var check =
+          AAAMTFileUpload && typeof AAAMTFileUpload.validateResumeFile === "function"
+            ? AAAMTFileUpload.validateResumeFile(file)
+            : { ok: true };
+        if (!check.ok) {
+          resumeFileId = "";
+          resumeFileName = "";
+          resumeOriginalName = file.name;
+          resumeSize = formatSize(file.size);
+          fileInput.value = "";
+          showResume(file.name, resumeSize, check.message || "Invalid file");
+          statusEl.style.color = "#d14343";
+          return;
+        }
         resumeSize = formatSize(file.size);
-        showResume(file.name, resumeSize);
+        resumeOriginalName = file.name;
+        resumeFileId = "";
+        resumeFileName = "";
+        uploading = true;
+        if (continueBtn) continueBtn.disabled = true;
+        showResume(file.name, resumeSize, "Uploading…");
+        statusEl.style.color = "#64748b";
+
+        AAAMTFileUpload.uploadFiles(file)
+          .then(function (uploaded) {
+            resumeFileId = uploaded.fileId;
+            resumeFileName = uploaded.name || file.name;
+            uploading = false;
+            if (continueBtn) continueBtn.disabled = false;
+            showResume(file.name, resumeSize, "Successfully uploaded");
+          })
+          .catch(function (err) {
+            uploading = false;
+            resumeFileId = "";
+            resumeFileName = "";
+            if (continueBtn) continueBtn.disabled = false;
+            showResume(file.name, resumeSize, (err && err.message) || "Upload failed");
+          });
       });
 
       document.getElementById("resume-clear").addEventListener("click", function () {
-        fileInput.value = "";
-        resumeSize = "";
-        chip.classList.remove("is-visible");
-        nameEl.textContent = "";
-        saved.resumeName = "";
-        saved.resumeSize = "";
+        clearResume();
       });
 
       form.addEventListener("submit", function (event) {
         event.preventDefault();
         if (!form.reportValidity()) return;
-        if (!fileInput.files.length && !saved.resumeName) {
+        if (uploading) return;
+        if (!resumeFileId) {
+          statusEl.textContent = "Please upload your resume before continuing.";
+          statusEl.style.color = "#d14343";
+          chip.classList.add("is-visible");
           fileInput.focus();
           return;
         }
@@ -209,11 +276,17 @@
           lastName: form.lastName.value.trim(),
           email: form.email.value.trim(),
           phone: form.phone.value.trim(),
-          source: form.source.value,
+          candidateSourceId: Number(form.source.value) || null,
+          source: form.source.options[form.source.selectedIndex]
+            ? form.source.options[form.source.selectedIndex].text
+            : "",
           location: form.location.value.trim(),
           linkedin: form.linkedin.value.trim(),
-          resumeName: (fileInput.files[0] && fileInput.files[0].name) || saved.resumeName || "",
-          resumeSize: resumeSize || saved.resumeSize || "",
+          resumeFileId: resumeFileId,
+          resumeFileName: resumeFileName,
+          resumeOriginalName: resumeOriginalName,
+          resumeName: resumeOriginalName || resumeFileName,
+          resumeSize: resumeSize || "",
         });
         var role = AAAMTViewRole.getRole();
         var q = role.jobOpeningId ? ("?id=" + encodeURIComponent(role.jobOpeningId)) : "";

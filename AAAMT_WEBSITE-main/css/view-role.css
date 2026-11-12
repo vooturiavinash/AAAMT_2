@@ -363,6 +363,29 @@
   font-size: 13px;
   font-weight: 500;
 }
+.vr-choice-list {
+  display: grid;
+  gap: 10px;
+}
+.vr-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  color: var(--vr-ink);
+  font-family: "Manrope", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.vr-choice input {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  /* accent-color: var(--vr-orange); */
+  flex: none;
+}
 
 .vr-upload {
   display: flex;

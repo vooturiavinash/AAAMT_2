@@ -85,11 +85,13 @@
   function fillRoleTexts(root) {
     root = root || document;
     var role = getRole();
+    var title = role.jobTitle || role.roleName || "";
+    var team = role.functionName || role.teamName || "";
     root.querySelectorAll("[data-role-title]").forEach(function (el) {
-      el.textContent = role.jobTitle;
+      el.textContent = title || "Role";
     });
     root.querySelectorAll("[data-role-badge]").forEach(function (el) {
-      el.textContent = role.functionName || "Role";
+      el.textContent = team || title || "Role";
     });
     root.querySelectorAll("[data-role-meta]").forEach(function (el) {
       el.textContent = roleMeta(role);
@@ -100,8 +102,9 @@
     root.querySelectorAll("[data-role-tagline]").forEach(function (el) {
       el.textContent = role.tagline || "";
     });
+    // Sidebar first row = role title (suitcase icon)
     root.querySelectorAll("[data-role-function]").forEach(function (el) {
-      el.textContent = role.functionName || "";
+      el.textContent = title || team || "";
     });
     root.querySelectorAll("[data-role-location]").forEach(function (el) {
       el.textContent = role.location || "";
@@ -109,7 +112,7 @@
     root.querySelectorAll("[data-role-type]").forEach(function (el) {
       el.textContent = role.employmentTypeName || "";
     });
-    document.title = (role.jobTitle || "Role") + " | AAAMT Careers";
+    document.title = (title || "Role") + " | AAAMT Careers";
   }
 
   /** Render API HTML into a section body (supports p / ul / ol / li). */
@@ -134,10 +137,12 @@
   }
 
   function roleFromJobDetail(detail) {
+    detail = detail || {};
     return {
-      jobOpeningId: detail.jobId,
-      jobTitle: detail.roleName,
-      functionName: detail.teamName,
+      jobOpeningId:
+        detail.jobOpeningId != null ? detail.jobOpeningId : detail.jobId,
+      jobTitle: detail.jobTitle || detail.roleName || "",
+      functionName: detail.functionName || detail.teamName || "",
       location: detail.location,
       employmentTypeName: detail.employmentTypeName,
       workModeName: detail.workModeName,
@@ -151,29 +156,20 @@
     };
   }
 
-  function loadRoleFromApiIfNeeded() {
-    var id = qs("id") || "1";
+  /**
+   * Application steps (viewrole2–4) use session role from viewrole1.
+   * Do not call GetJobById again — only refresh UI from store / query.
+   */
+  function loadRoleFromStore() {
     applyQueryFallback();
+    fillRoleTexts();
+    fillRoleSections();
+    return Promise.resolve(getRole());
+  }
 
-    if (!global.JobOpeningsService || typeof global.JobOpeningsService.getJobById !== "function") {
-      fillRoleTexts();
-      fillRoleSections();
-      return Promise.resolve(getRole());
-    }
-
-    return global.JobOpeningsService.getJobById(id)
-      .then(function (detail) {
-        setRole(roleFromJobDetail(detail));
-        fillRoleTexts();
-        fillRoleSections();
-        return getRole();
-      })
-      .catch(function (err) {
-        console.warn("GetJobById failed", err);
-        fillRoleTexts();
-        fillRoleSections();
-        return getRole();
-      });
+  /** @deprecated use loadRoleFromStore on apply steps; GetJobById only on viewrole1 */
+  function loadRoleFromApiIfNeeded() {
+    return loadRoleFromStore();
   }
 
   function applyQueryFallback() {
@@ -207,7 +203,9 @@
     clearApplication: clearApplication,
     fillRoleTexts: fillRoleTexts,
     fillRoleSections: fillRoleSections,
+    loadRoleFromStore: loadRoleFromStore,
     loadRoleFromApiIfNeeded: loadRoleFromApiIfNeeded,
+    roleFromJobDetail: roleFromJobDetail,
     roleMeta: roleMeta,
     appMeta: appMeta,
   };

@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@14,500;14,700&family=Manrope:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/base.css?v=prodlock1">
+  <link rel="stylesheet" href="css/base.css?v=megaresp3">
   <link rel="stylesheet" href="css/chatbot.css?v=embed1">
-  <link rel="stylesheet" href="css/view-role.css?v=vr2">
-  <link rel="stylesheet" href="css/responsive.css?v=megasize2">
+  <link rel="stylesheet" href="css/view-role.css?v=vr3">
+  <link rel="stylesheet" href="css/responsive.css?v=megaresp3">
 </head>
 <body class="vr-app-page">
   <header class="site-header">
@@ -100,63 +100,124 @@
 
         <div class="vr-form-footer">
           <a class="vr-back-link" id="back-2" href="/viewrole3">← Back</a>
-          <button class="btn btn-green" type="submit">Submit application +</button>
+          <button class="btn btn-green" id="vr-submit" type="submit">Submit application +</button>
         </div>
+        <p class="form-note" data-form-note></p>
       </form>
     </div>
   </main>
 
   <script src="js/nav.js?v=prodlock1"></script>
-  <script src="js/view-role.js?v=vr1"></script>
+  <script src="js/hr-api-config.js?v=livechk1"></script>
+  <script src="js/view-role.js?v=livechk1"></script>
+  <script src="js/save-application.js?v=hrtoken1"></script>
   <script>
     (function () {
-      AAAMTViewRole.fillRoleTexts();
-      var role = AAAMTViewRole.getRole();
-      var q = role.jobOpeningId ? ("?id=" + encodeURIComponent(role.jobOpeningId)) : "";
-      document.getElementById("edit-1").href = "/viewrole2" + q;
-      document.getElementById("edit-2").href = "/viewrole3" + q;
-      document.getElementById("back-2").href = "/viewrole3" + q;
-
-      var step1 = AAAMTViewRole.getStep(1);
-      var step2 = AAAMTViewRole.getStep(2);
-      if (!step1.firstName) {
-        location.replace("/viewrole2" + q);
-        return;
-      }
-      if (!step2.interest) {
-        location.replace("/viewrole3" + q);
-        return;
-      }
+      var form = document.getElementById("vr-step3");
+      var note = form.querySelector("[data-form-note]");
+      var submitBtn = document.getElementById("vr-submit");
 
       function esc(v) {
         return String(v || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       }
       function addItems(ul, items) {
-        ul.innerHTML = items.filter(Boolean).map(function (item) {
-          return "<li>" + esc(item) + "</li>";
-        }).join("");
+        ul.innerHTML = items
+          .filter(Boolean)
+          .map(function (item) {
+            return "<li>" + esc(item) + "</li>";
+          })
+          .join("");
       }
 
-      addItems(document.getElementById("review-details"), [
-        [step1.firstName, step1.lastName].filter(Boolean).join(" "),
-        step1.email,
-        step1.phone,
-        step1.location,
-        step1.resumeName,
-        step1.linkedin,
-        step1.source ? ("Source: " + step1.source) : "",
-      ]);
-      addItems(document.getElementById("review-answers"), [
-        step2.interest,
-        step2.problem,
-        step2.skills,
-        step2.portfolio,
-      ]);
+      // Review + submit only — no GetJobById here. SaveApplication runs on submit.
+      AAAMTViewRole.loadRoleFromStore().then(function (role) {
+        var q = role.jobOpeningId ? ("?id=" + encodeURIComponent(role.jobOpeningId)) : "";
+        document.getElementById("edit-1").href = "/viewrole2" + q;
+        document.getElementById("edit-2").href = "/viewrole3" + q;
+        document.getElementById("back-2").href = "/viewrole3" + q;
 
-      document.getElementById("vr-step3").addEventListener("submit", function (event) {
-        event.preventDefault();
-        if (!event.target.reportValidity()) return;
-        location.href = "/succesrole" + q;
+        var step1 = AAAMTViewRole.getStep(1);
+        var step2 = AAAMTViewRole.getStep(2);
+        if (!step1.firstName) {
+          location.replace("/viewrole2" + q);
+          return;
+        }
+        if (!Array.isArray(step2.answers)) {
+          location.replace("/viewrole3" + q);
+          return;
+        }
+
+        addItems(document.getElementById("review-details"), [
+          [step1.firstName, step1.lastName].filter(Boolean).join(" "),
+          step1.email,
+          step1.phone,
+          step1.location,
+          step1.resumeName,
+          step1.linkedin,
+          step1.source ? "Source: " + step1.source : "",
+        ]);
+
+        var answerItems = step2.answers.map(function (answer) {
+          return (answer.questionTitle || "Question") + ": " + (answer.answerText || "");
+        });
+        if (step2.portfolio) answerItems.push("Portfolio: " + step2.portfolio);
+        addItems(document.getElementById("review-answers"), answerItems);
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+
+          if (!step1.resumeFileId) {
+            if (note) {
+              note.classList.add("is-error");
+              note.textContent = "Please upload your resume (PDF or DOCX, max 5 MB) before submitting.";
+            }
+            location.href = "/viewrole2" + q;
+            return;
+          }
+
+          var payload = AAAMTSaveApplication.buildJobApplicationPayload(role, step1, step2);
+          if (!payload.jobOpeningId) {
+            if (note) note.textContent = "Missing job opening id. Open the role again from Careers.";
+            return;
+          }
+          if (!payload.resumeFileId) {
+            if (note) {
+              note.classList.add("is-error");
+              note.textContent = "Please upload your resume before submitting.";
+            }
+            return;
+          }
+
+          submitBtn.disabled = true;
+          if (note) {
+            note.classList.remove("is-error");
+            note.textContent = "Submitting application…";
+          }
+
+          AAAMTSaveApplication.saveApplication([payload])
+            .then(function (result) {
+              var body = result.body || {};
+              if (result.ok && body.success === true) {
+                AAAMTViewRole.clearApplication();
+                location.href = "/succesrole" + q;
+                return;
+              }
+              submitBtn.disabled = false;
+              if (note) {
+                note.classList.add("is-error");
+                note.textContent =
+                  (body && body.message) || "Could not submit your application. Please try again.";
+              }
+            })
+            .catch(function () {
+              submitBtn.disabled = false;
+              if (note) {
+                note.classList.add("is-error");
+                note.textContent = "Could not submit your application. Please try again.";
+              }
+            });
+        });
       });
     })();
   </script>

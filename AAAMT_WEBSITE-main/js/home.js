@@ -55,7 +55,7 @@
     {
       image: "assets/images/avatar-b.png",
       name: "S. Lakshmi, Accounts Manager, DPS School ( Hyderabad )",
-      quote: "“Fee management is  simple, accurate, and hassle-free.”",
+      quote: "“Fee management is now simple, accurate, and hassle-free.”",
       body: "Earlier we had multiple mismatches in fee collections. After switching to this ERP, reconciliation is smooth, reports are instant, and transparency has improved greatly."
     },
     {

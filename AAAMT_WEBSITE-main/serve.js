@@ -22,23 +22,30 @@ const {
 } = require("./lib/partnership-mail");
 
 const ROOT = __dirname;
-const UPSTREAM = "https://communication.aaamt.in/api/Email/demo-survey";
 const CHAT_UPSTREAM =
   process.env.AAAMT_CHAT_UPSTREAM ||
   "https://aaamt-website-rag-backend.onrender.com/api/chat";
 const HOST = "127.0.0.1";
-const PORT = 8765;
+const PORT = Number(process.env.PORT || 5000);
 // HR API: full URL = baseUrl + endpoint. Same endpoint in every environment.
 //   APP_ENV=dev  (default) → https://devcosapi.xmtopper.com
-//   APP_ENV=live           → fill in after deploy
+//   APP_ENV=live           → https://api.clearwu.com
 const HR_API_BASE_URLS = {
   dev: "https://devcosapi.xmtopper.com",
-  live: "",
+  live: "https://api.clearwu.com",
 };
 const HR_API_ENV = process.env.APP_ENV === "live" ? "live" : "dev";
 const HR_API_BASE_URL = HR_API_BASE_URLS[HR_API_ENV];
+// Contact enquiry proxy (same-origin /api/enquiry → communication API)
+const ENQUIRY_UPSTREAMS = {
+  live: "https://communication.aaamt.in/api/Email/demo-survey",
+  dev: "https://devcommunication.aaamt.in/api/Email/demo-survey",
+};
+const UPSTREAM = ENQUIRY_UPSTREAMS[HR_API_ENV] || ENQUIRY_UPSTREAMS.dev;
 const HR_ENDPOINT_GET_ACTIVE_JOB_OPENINGS = "/api/HR/GetActiveJobOpenings";
 const HR_ENDPOINT_GET_JOB_BY_ID = "/api/HR/GetJobById";
+const HR_ENDPOINT_GET_WEBSITE_JOB_OPENING_BY_ID =
+  "/api/HR/GetWebsiteJobOpeningById";
 const HR_ENDPOINT_SAVE_APPLICATION = "/api/HR/SaveApplication";
 
 const MIME = {
@@ -425,6 +432,7 @@ const server = http.createServer(async (req, res) => {
       pathname === "/api/chat" ||
       pathname === "/api/HR/GetActiveJobOpenings" ||
       pathname === "/api/HR/GetJobById" ||
+      pathname === "/api/HR/GetWebsiteJobOpeningById" ||
       pathname === "/api/HR/SaveApplication") &&
     req.method === "OPTIONS"
   ) {
@@ -445,6 +453,14 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === HR_ENDPOINT_GET_JOB_BY_ID && req.method === "GET") {
     proxyHrGet(req, res, HR_ENDPOINT_GET_JOB_BY_ID);
+    return;
+  }
+
+  if (
+    pathname === HR_ENDPOINT_GET_WEBSITE_JOB_OPENING_BY_ID &&
+    req.method === "GET"
+  ) {
+    proxyHrGet(req, res, HR_ENDPOINT_GET_WEBSITE_JOB_OPENING_BY_ID);
     return;
   }
 

@@ -8,10 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@14,500;14,700&family=Manrope:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/base.css?v=prodlock1">
+  <link rel="stylesheet" href="css/base.css?v=megaresp3">
   <link rel="stylesheet" href="css/chatbot.css?v=embed1">
-  <link rel="stylesheet" href="css/view-role.css?v=vr2">
-  <link rel="stylesheet" href="css/responsive.css?v=megasize2">
+  <link rel="stylesheet" href="css/view-role.css?v=vr3">
+  <link rel="stylesheet" href="css/responsive.css?v=megaresp3">
 </head>
 <body class="vr-app-page">
   <header class="site-header">
@@ -51,9 +51,9 @@
       <div class="wrap">
         <div>
           <p class="vr-badge">Application for</p>
-          <h1 data-role-title>Product Designer</h1>
+          <h1 data-role-title>Role</h1>
         </div>
-        <p class="vr-app-hero-meta" data-role-app-meta>Product · Hyderabad · Full-time</p>
+        <p class="vr-app-hero-meta" data-role-app-meta></p>
       </div>
     </section>
 
@@ -71,21 +71,7 @@
         <h2>Your experience and interests</h2>
         <p class="vr-form-lede">Brief answers are enough. Focus on your contribution and avoid sharing confidential information</p>
 
-        <div class="vr-field">
-          <label for="interest">Why are you interested in designing products for real operational work? <span class="req" aria-hidden="true"><img src="assets/icons/required-star.svg" alt=""></span></label>
-          <textarea id="interest" name="interest" required placeholder="Share what draws you to this kind of work."></textarea>
-          <p class="vr-field-hint">Suggested maximum 250 words</p>
-        </div>
-
-        <div class="vr-field">
-          <label for="problem">Describe one workflow-heavy product problem you helped solve. <span class="req" aria-hidden="true"><img src="assets/icons/required-star.svg" alt=""></span></label>
-          <textarea id="problem" name="problem" required placeholder="Explain the context, your role, key decisions, collaboration, and what you learned."></textarea>
-        </div>
-
-        <div class="vr-field">
-          <label for="skills">Which product design skills would you most like to deepen? <span class="req" aria-hidden="true"><img src="assets/icons/required-star.svg" alt=""></span></label>
-          <textarea id="skills" name="skills" required placeholder="List the skills you want to grow in this role."></textarea>
-        </div>
+        <div id="vr-questions"></div>
 
         <div class="vr-support-box">
           <h4>Share one relevant work sample of yours</h4>
@@ -100,35 +86,245 @@
           <a class="vr-back-link" id="back-info" href="/viewrole2">← Back to info</a>
           <button class="btn btn-orange" type="submit">Continue <img src="assets/icons/arrow-cta.svg" alt="" width="16" height="16"></button>
         </div>
+        <p class="form-note" data-form-note></p>
       </form>
     </div>
   </main>
 
   <script src="js/nav.js?v=prodlock1"></script>
-  <script src="js/view-role.js?v=vr1"></script>
+  <script src="js/view-role.js?v=livechk1"></script>
   <script>
     (function () {
-      AAAMTViewRole.fillRoleTexts();
-      var role = AAAMTViewRole.getRole();
-      var q = role.jobOpeningId ? ("?id=" + encodeURIComponent(role.jobOpeningId)) : "";
-      document.getElementById("back-info").href = "/viewrole2" + q;
-
       var form = document.getElementById("vr-step2");
-      var saved = AAAMTViewRole.getStep(2);
-      Object.keys(saved).forEach(function (key) {
-        if (form.elements[key]) form.elements[key].value = saved[key];
-      });
+      var note = form.querySelector("[data-form-note]");
+      var host = document.getElementById("vr-questions");
 
-      form.addEventListener("submit", function (event) {
-        event.preventDefault();
-        if (!form.reportValidity()) return;
-        AAAMTViewRole.setStep(2, {
-          interest: form.interest.value.trim(),
-          problem: form.problem.value.trim(),
-          skills: form.skills.value.trim(),
-          portfolio: form.portfolio.value.trim(),
+      function esc(v) {
+        return String(v || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function sortedQuestions(role) {
+        return (Array.isArray(role.questions) ? role.questions.slice() : []).sort(function (a, b) {
+          return Number(a.displayOrder || 0) - Number(b.displayOrder || 0);
         });
-        location.href = "/viewrole4" + q;
+      }
+
+      function fieldName(questionId) {
+        return "q_" + questionId;
+      }
+
+      function renderQuestion(q) {
+        var id = q.questionId;
+        var name = fieldName(id);
+        var req = q.isRequired ? ' <span class="req" aria-hidden="true"><img src="assets/icons/required-star.svg" alt=""></span>' : "";
+        var type = Number(q.answerTypeId);
+        var options = Array.isArray(q.options) ? q.options.slice().sort(function (a, b) {
+          return Number(a.displayOrder || 0) - Number(b.displayOrder || 0);
+        }) : [];
+        var html = '<div class="vr-field" data-question-id="' + esc(id) + '">';
+        html += '<label for="' + name + '">' + esc(q.questionTitle) + req + "</label>";
+
+        if (type === 2 || type === 4) {
+          // Radio / Yes-No
+          var opts = options.length
+            ? options
+            : [
+                { optionText: "Yes", displayOrder: 1 },
+                { optionText: "No", displayOrder: 2 },
+              ];
+          html += '<div class="vr-choice-list">';
+          opts.forEach(function (opt, index) {
+            var oid = name + "_" + index;
+            html +=
+              '<label class="vr-choice"><input type="radio" name="' +
+              name +
+              '" id="' +
+              oid +
+              '" value="' +
+              esc(opt.optionText) +
+              '"' +
+              (q.isRequired ? " required" : "") +
+              "> <span>" +
+              esc(opt.optionText) +
+              "</span></label>";
+          });
+          html += "</div>";
+        } else if (type === 3) {
+          html += '<div class="vr-choice-list">';
+          options.forEach(function (opt, index) {
+            var oid = name + "_" + index;
+            html +=
+              '<label class="vr-choice"><input type="checkbox" name="' +
+              name +
+              '" id="' +
+              oid +
+              '" value="' +
+              esc(opt.optionText) +
+              '"> <span>' +
+              esc(opt.optionText) +
+              "</span></label>";
+          });
+          html += "</div>";
+        } else if (type === 6) {
+          html +=
+            '<input id="' +
+            name +
+            '" name="' +
+            name +
+            '" type="url" maxlength="250" placeholder="https://..."' +
+            (q.isRequired ? " required" : "") +
+            ">";
+          html += '<p class="vr-field-hint" data-char-count-for="' + name + '">0 / 250 characters</p>';
+        } else {
+          html +=
+            '<textarea id="' +
+            name +
+            '" name="' +
+            name +
+            '" rows="4" maxlength="250" placeholder="Type your answer"' +
+            (q.isRequired ? " required" : "") +
+            "></textarea>";
+          html += '<p class="vr-field-hint" data-char-count-for="' + name + '">0 / 250 characters</p>';
+        }
+
+        html += "</div>";
+        return html;
+      }
+
+      var ANSWER_MAX_CHARS = 250;
+
+      function bindAnswerLimits() {
+        form.querySelectorAll("textarea[maxlength], input[type='url'][maxlength], input[type='text'][maxlength]").forEach(function (el) {
+          function syncCount() {
+            if (el.value.length > ANSWER_MAX_CHARS) {
+              el.value = el.value.slice(0, ANSWER_MAX_CHARS);
+            }
+            var hint = form.querySelector('[data-char-count-for="' + el.name + '"]');
+            if (hint) hint.textContent = el.value.length + " / " + ANSWER_MAX_CHARS + " characters";
+          }
+          el.addEventListener("input", syncCount);
+          el.addEventListener("paste", function () {
+            setTimeout(syncCount, 0);
+          });
+          syncCount();
+        });
+      }
+
+      function collectAnswers(questions) {
+        return questions.map(function (q) {
+          var name = fieldName(q.questionId);
+          var type = Number(q.answerTypeId);
+          var answerText = "";
+          if (type === 3) {
+            answerText = Array.prototype.slice
+              .call(form.querySelectorAll('input[name="' + name + '"]:checked'))
+              .map(function (el) {
+                return el.value;
+              })
+              .join(", ");
+          } else if (type === 2 || type === 4) {
+            var checked = form.querySelector('input[name="' + name + '"]:checked');
+            answerText = checked ? checked.value : "";
+          } else {
+            var el = form.elements[name];
+            answerText = el ? String(el.value || "").trim() : "";
+          }
+          return {
+            questionId: Number(q.questionId),
+            questionTitle: String(q.questionTitle || ""),
+            answerText: answerText,
+            displayOrder: Number(q.displayOrder || 0),
+            answerTypeId: Number(q.answerTypeId || 0) || null,
+          };
+        });
+      }
+
+      function restoreAnswers(savedAnswers) {
+        if (!Array.isArray(savedAnswers)) return;
+        savedAnswers.forEach(function (answer) {
+          var name = fieldName(answer.questionId);
+          var fields = form.querySelectorAll('[name="' + name + '"]');
+          if (!fields.length) return;
+          var first = fields[0];
+          if (first.type === "checkbox") {
+            var selected = String(answer.answerText || "")
+              .split(",")
+              .map(function (s) {
+                return s.trim();
+              });
+            fields.forEach(function (el) {
+              el.checked = selected.indexOf(el.value) !== -1;
+            });
+          } else if (first.type === "radio") {
+            fields.forEach(function (el) {
+              el.checked = el.value === answer.answerText;
+            });
+          } else {
+            first.value = answer.answerText || "";
+          }
+        });
+      }
+
+      AAAMTViewRole.loadRoleFromStore().then(function (role) {
+        var q = role.jobOpeningId ? ("?id=" + encodeURIComponent(role.jobOpeningId)) : "";
+        document.getElementById("back-info").href = "/viewrole2" + q;
+
+        var step1 = AAAMTViewRole.getStep(1);
+        if (!step1.firstName) {
+          location.replace("/viewrole2" + q);
+          return;
+        }
+
+        var questions = sortedQuestions(role);
+        if (!questions.length) {
+          host.innerHTML =
+            '<p class="vr-form-lede">No role questions were returned for this opening. You can continue to review.</p>';
+        } else {
+          host.innerHTML = questions.map(renderQuestion).join("");
+        }
+
+        var saved = AAAMTViewRole.getStep(2);
+        if (saved.portfolio && form.portfolio) form.portfolio.value = saved.portfolio;
+        restoreAnswers(saved.answers);
+        bindAnswerLimits();
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          if (!form.reportValidity()) return;
+
+          var answers = collectAnswers(questions);
+          var missing = answers.some(function (answer, index) {
+            var question = questions[index];
+            return question && question.isRequired && !String(answer.answerText || "").trim();
+          });
+          if (missing) {
+            if (note) {
+              note.classList.add("is-error");
+              note.textContent = "Please answer all required questions.";
+            }
+            return;
+          }
+          var tooLong = answers.some(function (answer) {
+            return String(answer.answerText || "").length > ANSWER_MAX_CHARS;
+          });
+          if (tooLong) {
+            if (note) {
+              note.classList.add("is-error");
+              note.textContent = "Each answer can be at most " + ANSWER_MAX_CHARS + " characters.";
+            }
+            return;
+          }
+
+          AAAMTViewRole.setStep(2, {
+            answers: answers,
+            portfolio: form.portfolio.value.trim(),
+          });
+          location.href = "/viewrole4" + q;
+        });
       });
     })();
   </script>

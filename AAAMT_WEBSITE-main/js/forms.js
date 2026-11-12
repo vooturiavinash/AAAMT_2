@@ -1,22 +1,45 @@
 (function () {
   /**
    * Forms:
-   * - Partnership: POST /api/partnership-enquiry (Nodemailer SMTP via serve.js — no third-party email API)
-   * - Contact (legacy): communication.aaamt.in demo-survey or local /api/enquiry proxy
+   * - Partnership: POST /api/partnership-enquiry (Nodemailer SMTP via serve.js)
+   * - Contact enquiry: always same-origin POST /api/enquiry
+   *   (avoids CORS). Proxied by serve.js locally / IIS ARR on live:
+   *     local/dev → https://devcommunication.aaamt.in/api/Email/demo-survey
+   *     live      → https://communication.aaamt.in/api/Email/demo-survey
    */
-  var UPSTREAM = "https://communication.aaamt.in/api/Email/demo-survey";
-  var LOCAL_PROXY = "/api/enquiry";
+  var ENQUIRY_PROXY = "/api/enquiry";
+  var ENQUIRY_UPSTREAMS = {
+    live: "https://communication.aaamt.in/api/Email/demo-survey",
+    local: "https://devcommunication.aaamt.in/api/Email/demo-survey",
+    dev: "https://devcommunication.aaamt.in/api/Email/demo-survey",
+  };
   var PARTNERSHIP_ENDPOINT = "/api/partnership-enquiry";
   var ENQUIRY_THANKS = "/enquiry-submitted";
 
-  function isLocalHost() {
-    var h = location.hostname;
-    return h === "127.0.0.1" || h === "localhost" || h === "::1";
+  function detectEnquiryEnv() {
+    if (typeof window.AAAMT_APP_ENV === "string" && window.AAAMT_APP_ENV.trim()) {
+      var forced = window.AAAMT_APP_ENV.trim().toLowerCase();
+      if (forced === "live" || forced === "prod" || forced === "production") return "live";
+      if (forced === "local") return "local";
+      return "dev";
+    }
+    var h = String((location && location.hostname) || "").toLowerCase();
+    if (h === "aaamt.in" || h === "www.aaamt.in") return "live";
+    if (h === "dev.aaamt.in") return "dev";
+    return "local";
   }
 
   function enquiryUrl() {
-    return isLocalHost() ? LOCAL_PROXY : UPSTREAM;
+    // Same-origin proxy — browser never calls communication.* cross-origin
+    return ENQUIRY_PROXY;
   }
+
+  window.AAAMT_ENQUIRY = {
+    env: detectEnquiryEnv(),
+    url: enquiryUrl,
+    upstream: ENQUIRY_UPSTREAMS[detectEnquiryEnv()] || ENQUIRY_UPSTREAMS.local,
+    urls: ENQUIRY_UPSTREAMS,
+  };
 
   function fieldValue(form, selector) {
     var el = form.querySelector(selector);
@@ -252,6 +275,7 @@
       setSubmitting(form, false);
       if (note) {
         note.textContent =
+          (error && error.message) ||
           "We could not send your enquiry right now. Please try again or email sales@aaamt.in.";
       }
       if (typeof console !== "undefined" && console.error) {

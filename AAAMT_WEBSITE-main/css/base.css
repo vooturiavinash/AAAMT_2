@@ -306,20 +306,24 @@ body:has(.nav-drop.is-open)::before {
 }
 
 .mega {
-  width: min(1280px, 100%);
-  max-width: 1280px;
-  margin-inline: auto;
-  padding-inline: 0;
+  /* Keep a true 1280px card row when the viewport allows (matches header rail). */
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: max(16px, calc((100vw - 1280px) / 2));
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(0, 425px) minmax(0, 425px) minmax(0, 390px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   justify-content: center;
-  gap: 20px;
+  gap: clamp(12px, 1.4vw, 20px);
   align-items: stretch;
 }
 
 .mega-card {
   display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   border-radius: 16px;
   transition:
     transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
@@ -343,9 +347,10 @@ body:has(.nav-drop.is-open)::before {
   justify-content: center;
   gap: 9px;
   width: 100%;
+  min-width: 0;
   min-height: 224px;
-  height: 224px;
-  padding: 28px 18px;
+  height: auto;
+  padding: clamp(20px, 2vw, 28px) clamp(14px, 1.5vw, 18px);
   background: #fff;
   border: 1px solid #e7e7e7;
   border-radius: 16px;
@@ -378,23 +383,26 @@ body:has(.nav-drop.is-open)::before {
   margin: 0;
   color: #0f172a;
   font-family: "Manrope", sans-serif;
-  font-size: 20px;
+  font-size: clamp(17px, 1.4vw, 20px);
   font-weight: 700;
-  line-height: normal;
+  line-height: 1.25;
 }
 
 .mega-product p {
   margin: 0;
   max-width: 100%;
+  min-width: 0;
   color: #7e7a88;
   font-family: "Manrope", sans-serif;
-  font-size: 16px;
+  font-size: clamp(13px, 1.15vw, 16px);
   font-weight: 600;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .mega-product p span {
   display: block;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .mega-note {
@@ -404,19 +412,21 @@ body:has(.nav-drop.is-open)::before {
   justify-content: center;
   gap: 12px;
   width: 100%;
+  min-width: 0;
   min-height: 224px;
-  height: 224px;
-  padding: 28px 24px;
+  height: auto;
+  padding: clamp(20px, 2vw, 28px) clamp(16px, 1.8vw, 24px);
   text-align: left;
   background: #fffbf4;
   border: 1.6px solid #ff9900;
   border-radius: 16px;
   color: #7e7a88;
-  font-size: 16px;
+  font-size: clamp(13px, 1.15vw, 16px);
   font-weight: 600;
   box-sizing: border-box;
   line-height: 1.5;
   box-shadow: none;
+  overflow: visible;
   transition:
     transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
     background-color 0.25s ease;
@@ -442,23 +452,25 @@ body:has(.nav-drop.is-open)::before {
 .mega-note-copy strong {
   display: block;
   color: #000;
-  font-size: 20px;
+  font-size: clamp(17px, 1.4vw, 20px);
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 1.35;
 }
 
 .mega-note-copy strong span,
 .mega-note-copy p span {
   display: block;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .mega-note-copy p {
   margin: 0;
   color: #7e7a88;
-  font-size: 16px;
+  font-size: clamp(13px, 1.15vw, 16px);
   font-weight: 600;
   line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .mega-note-btn {
@@ -950,10 +962,6 @@ main {
 }
 
 @media (max-width: 1100px) {
-  .mega { max-width: var(--max); }
-}
-
-@media (max-width: 1100px) {
   .footer-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
 
@@ -1004,7 +1012,17 @@ main {
   .nav-drop-panel::before { display: none; }
   body::before,
   body:has(.nav-drop.is-open)::before { display: none; }
-  .mega { width: 100%; grid-template-columns: 1fr; }
+  .mega {
+    width: 100%;
+    grid-template-columns: 1fr;
+    padding-inline: 0;
+    gap: 12px;
+  }
+  .mega-product,
+  .mega-note {
+    min-height: 0;
+    height: auto;
+  }
   .header-inner > .btn { display: none; }
   .site-nav .mobile-cta { display: inline-flex; width: 100%; justify-content: center; }
   .footer-grid { grid-template-columns: 1fr; gap: 28px; }

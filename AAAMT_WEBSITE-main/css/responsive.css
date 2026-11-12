@@ -30,11 +30,53 @@ svg {
 }
 
 .mega {
-  width: min(1280px, 100%) !important;
-  max-width: 1280px !important;
-  margin-inline: auto;
-  padding-inline: 0;
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+  padding-inline: max(16px, calc((100vw - 1280px) / 2)) !important;
   box-sizing: border-box;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: clamp(12px, 1.4vw, 20px) !important;
+  align-items: stretch !important;
+}
+
+.mega-card,
+.mega-note {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Keep intentional two-line span breaks, but never clip long product copy */
+.mega-product p span,
+.mega-note-copy strong span,
+.mega-note-copy p span {
+  white-space: normal !important;
+}
+
+/* Surface Pro / iPad Pro landscape and similar mid desktops */
+@media (max-width: 1359px) and (min-width: 861px) {
+  .mega {
+    gap: 16px !important;
+  }
+
+  .mega-product,
+  .mega-note {
+    min-height: 200px !important;
+    height: auto !important;
+  }
+}
+
+/* iPad Pro 13 portrait / narrow tablets — 2+1 so cards stay aligned */
+@media (max-width: 1180px) and (min-width: 861px) {
+  .mega {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  .mega-note {
+    grid-column: 1 / -1;
+  }
 }
 
 .cta-band .wrap {

@@ -1,5 +1,5 @@
 /**
- * JobDetail model — payload from GetJobById.
+ * JobDetail model — payload from GetWebsiteJobOpeningById (public careers detail).
  * API fields (no spaces): whyThisRoleExists, whatYouWillOwn, whatYouBring,
  * usefulNotEssential, whatYouWillLearn.
  */
@@ -14,8 +14,9 @@
 
   function JobDetail(raw) {
     raw = raw || {};
-    this.jobId = raw.jobId != null ? raw.jobId : raw.jobOpeningId != null ? raw.jobOpeningId : null;
-    this.jobOpeningId = this.jobId;
+    this.jobOpeningId =
+      raw.jobOpeningId != null ? raw.jobOpeningId : raw.jobId != null ? raw.jobId : null;
+    this.jobId = raw.jobId != null ? raw.jobId : this.jobOpeningId;
     this.teamId = raw.teamId;
     this.teamName = pick(raw, ["teamName", "TeamName", "functionName", "FunctionName"]);
     this.functionName = this.teamName;

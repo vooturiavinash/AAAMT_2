@@ -28,6 +28,45 @@
       '<p class="openings-status' + (isError ? " is-error" : "") + '">' + esc(text) + "</p>";
   }
 
+  function emptyHtml() {
+    return (
+      '<div class="roles-empty" role="status">' +
+        '<span class="roles-empty-icon" aria-hidden="true">' +
+          '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+            '<circle cx="10.5" cy="10.5" r="6.25" stroke="#475467" stroke-width="1.5"/>' +
+            '<path d="m15.2 15.2 4.3 4.3" stroke="#475467" stroke-width="1.5" stroke-linecap="round"/>' +
+            '<path d="m8.4 8.4 4.2 4.2M12.6 8.4 8.4 12.6" stroke="#475467" stroke-width="1.5" stroke-linecap="round"/>' +
+          "</svg>" +
+        "</span>" +
+        '<p class="roles-empty-title">No roles match your search</p>' +
+        '<p class="roles-empty-lede">Try adjusting your filters or explore our Talent Network for future opportunities.</p>' +
+        '<a class="roles-empty-cta" href="#talent">Join Talent Network</a>' +
+      "</div>"
+    );
+  }
+
+  function showEmptyState() {
+    list.innerHTML = emptyHtml();
+  }
+
+  function syncEmptyState() {
+    var cards = list.querySelectorAll(".opening-card");
+    var empty = list.querySelector(".roles-empty");
+    if (!cards.length) {
+      if (!empty) showEmptyState();
+      return;
+    }
+    var visible = 0;
+    cards.forEach(function (card) {
+      if (!card.classList.contains("is-hidden")) visible += 1;
+    });
+    if (visible === 0) {
+      if (!empty) list.insertAdjacentHTML("beforeend", emptyHtml());
+    } else if (empty) {
+      empty.remove();
+    }
+  }
+
   function cardHtml(job) {
     return (
       '<article class="opening-card" data-function="' + esc(job.functionSlug) +
@@ -94,15 +133,17 @@
         (!loc || card.dataset.location === loc);
       card.classList.toggle("is-hidden", !show);
     });
+    syncEmptyState();
   }
 
   function render() {
     if (!jobs.length) {
-      showStatus("No open roles right now. Please check back soon.", false);
+      showEmptyState();
       return;
     }
     list.innerHTML = jobs.map(cardHtml).join("");
     fillFilters();
+    applyFilters();
   }
 
   // Custom dropdown UI for the three <select> filters.
@@ -192,10 +233,12 @@
   showStatus("Loading open roles…", false);
   JobOpeningsService.getActiveJobOpenings()
     .then(function (result) {
-      jobs = result;
+      jobs = Array.isArray(result) ? result : [];
       render();
     })
-    .catch(function (err) {
-      showStatus(err.message || "Unable to load open roles right now.", true);
+    .catch(function () {
+      // Keep the openings section looking designed when the API is down.
+      jobs = [];
+      showEmptyState();
     });
 })();
