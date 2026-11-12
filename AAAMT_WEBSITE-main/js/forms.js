@@ -2,13 +2,12 @@
   /**
    * Forms:
    * - Partnership: POST /api/partnership-enquiry (Nodemailer SMTP via serve.js)
-   * - Contact enquiry: always same-origin POST /api/enquiry
-   *   (avoids CORS). Proxied by serve.js locally / IIS ARR on live:
-   *     local/dev → https://devcommunication.aaamt.in/api/Email/demo-survey
+   * - Contact enquiry (no PHP):
    *     live      → https://communication.aaamt.in/api/Email/demo-survey
+   *     local/dev → https://devcommunication.aaamt.in/api/Email/demo-survey
+   *   On localhost only, use serve.js proxy /api/enquiry (avoids local CORS).
    */
-  var ENQUIRY_PROXY = "/api/enquiry";
-  var ENQUIRY_UPSTREAMS = {
+  var ENQUIRY_URLS = {
     live: "https://communication.aaamt.in/api/Email/demo-survey",
     local: "https://devcommunication.aaamt.in/api/Email/demo-survey",
     dev: "https://devcommunication.aaamt.in/api/Email/demo-survey",
@@ -30,15 +29,17 @@
   }
 
   function enquiryUrl() {
-    // Same-origin proxy — browser never calls communication.* cross-origin
-    return ENQUIRY_PROXY;
+    var h = String((location && location.hostname) || "").toLowerCase();
+    var isLocal = !h || h === "localhost" || h === "127.0.0.1" || h === "::1";
+    if (isLocal) return "/api/enquiry";
+    var env = detectEnquiryEnv();
+    return ENQUIRY_URLS[env] || ENQUIRY_URLS.local;
   }
 
   window.AAAMT_ENQUIRY = {
     env: detectEnquiryEnv(),
     url: enquiryUrl,
-    upstream: ENQUIRY_UPSTREAMS[detectEnquiryEnv()] || ENQUIRY_UPSTREAMS.local,
-    urls: ENQUIRY_UPSTREAMS,
+    urls: ENQUIRY_URLS,
   };
 
   function fieldValue(form, selector) {
